@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MarkingSystemConfiguration>
+    <ClientInfo>
+        <Name>Automotive Component Marking System</Name>
+        <Industry>Automotive</Industry>
+        <ComplianceStandards>
+            <Standard>IATF16949</Standard>
+            <Standard>ISO9001</Standard>
+            <Standard>ISO14001</Standard>
+        </ComplianceStandards>
+        <ConfigurationVersion>2.1</ConfigurationVersion>
+        <LastUpdated>2024-01-15T10:30:00Z</LastUpdated>
+    </ClientInfo>
+
+    <MarkingTemplates>
+        <Template id="automotive_primary" priority="1">
+            <Name>Primary Component Marking</Name>
+            <Description>Standard marking for automotive components</Description>
+            <ProductTypes>
+                <ProductType>engine_component</ProductType>
+                <ProductType>transmission_part</ProductType>
+                <ProductType>brake_component</ProductType>
+            </ProductTypes>
+            <MarkingContent>
+                <Line number="1" format="P/N: {PART_NUMBER}"/>
+                <Line number="2" format="S/N: {SERIAL_NUMBER}"/>
+                <Line number="3" format="SUP: {SUPPLIER_CODE}"/>
+                <Line number="4" format="DATE: {PRODUCTION_DATE}"/>
+            </MarkingContent>
+            <Position x="5" y="5" rotation="0"/>
+            <FontSettings size="8" weight="bold"/>
+            <QualitySettings grade="automotive_grade" verification="mandatory"/>
+        </Template>
+
+        <Template id="automotive_secondary" priority="2">
+            <Name>Secondary Marking</Name>
+            <Description>Date and shift marking</Description>
+            <ProductTypes>
+                <ProductType>any</ProductType>
+            </ProductTypes>
+            <MarkingContent>
+                <Line number="1" format="{PRODUCTION_DATE}"/>
+                <Line number="2" format="SHIFT: {SHIFT_CODE}"/>
+            </MarkingContent>
+            <Position x="20" y="5" rotation="0"/>
+            <FontSettings size="6" weight="normal"/>
+            <QualitySettings grade="standard" verification="optional"/>
+        </Template>
+
+        <Template id="recall_traceability" priority="3">
+            <Name>Recall Traceability Marking</Name>
+            <Description>Critical component traceability</Description>
+            <ProductTypes>
+                <ProductType>safety_critical</ProductType>
+                <ProductType>powertrain</ProductType>
+            </ProductTypes>
+            <MarkingContent>
+                <Line number="1" format="TRACE: {BATCH_ID}"/>
+                <Line number="2" format="LOT: {LOT_NUMBER}"/>
+                <Line number="3" format="PLANT: {PLANT_CODE}"/>
+            </MarkingContent>
+            <Position x="5" y="15" rotation="0"/>
+            <FontSettings size="7" weight="bold"/>
+            <QualitySettings grade="critical" verification="mandatory"/>
+        </Template>
+    </MarkingTemplates>
+
+    <ValidationRules>
+        <Rule field="part_number" type="regex" pattern="^[A-Z]{2}-[0-9]{4,6}-[A-Z0-9]{2}$" required="true"/>
+        <Rule field="serial_number" type="length" minLength="6" maxLength="12" required="true"/>
+        <Rule field="supplier_code" type="regex" pattern="^[A-Z]{4}$" required="true"/>
+        <Rule field="production_date" type="date" format="YYYYMMDD" required="true"/>
+        <Rule field="shift_code" type="enum" values="A,B,C,D" required="false"/>
+        <Rule field="plant_code" type="regex" pattern="^[A-Z]{3}[0-9]{2}$" required="false"/>
+        <Rule field="batch_id" type="alphanumeric" length="10" required="false"/>
+    </ValidationRules>
+
+    <HardwareConfiguration>
+        <PLCSettings>
+            <Protocol>modbus_tcp</Protocol>
+            <IPAddress>192.168.1.100</IPAddress>
+            <Port>502</Port>
+            <UnitID>1</UnitID>
+            <Timeout>5000</Timeout>
+        </PLCSettings>
+        
+        <DiscreteIO>
+            <Input address="0" name="product_present" description="Product detection sensor"/>
+            <Input address="1" name="system_ready" description="System ready status"/>
+            <Input address="2" name="emergency_stop" description="Emergency stop button"/>
+            <Input address="3" name="marking_complete" description="Marking operation complete"/>
+            <Input address="4" name="quality_check_pass" description="Quality verification sensor"/>
+            
+            <Output address="0" name="marking_start" description="Start marking operation"/>
+            <Output address="1" name="status_green" description="System ready indicator"/>
+            <Output address="2" name="status_red" description="Error/fault indicator"/>
+            <Output address="3" name="cycle_complete" description="Cycle completion signal"/>
+            <Output address="4" name="reject_part" description="Part rejection actuator"/>
+        </DiscreteIO>
+
+        <AnalogIO>
+            <Input address="0" name="line_speed" scale="0.1" offset="0" units="parts/min"/>
+            <Input address="1" name="marking_quality" scale="0.01" offset="0" units="percent"/>
+            <Input address="2" name="temperature" scale="0.1" offset="-50" units="celsius"/>
+        </AnalogIO>
+    </HardwareConfiguration>
+
+    <QualitySettings>
+        <QualityGrade name="automotive_grade">
+            <MarkingPrecision>±0.1mm</MarkingPrecision>
+            <FontQuality>high</FontQuality>
+            <Verification>optical_scan</Verification>
+            <Repeatability>99.9%</Repeatability>
+        </QualityGrade>
+        
+        <QualityGrade name="standard">
+            <MarkingPrecision>±0.2mm</MarkingPrecision>
+            <FontQuality>standard</FontQuality>
+            <Verification>visual</Verification>
+            <Repeatability>99.5%</Repeatability>
+        </QualityGrade>
+        
+        <QualityGrade name="critical">
+            <MarkingPrecision>±0.05mm</MarkingPrecision>
+            <FontQuality>ultra_high</FontQuality>
+            <Verification>dual_scan</Verification>
+            <Repeatability>99.99%</Repeatability>
+        </QualityGrade>
+    </QualitySettings>
+
+    <OperationalParameters>
+        <ProductionSettings>
+            <MaxProductionRate>120</MaxProductionRate> <!-- parts per minute -->
+            <MinCycleTime>500</MinCycleTime> <!-- milliseconds -->
+            <QueueCapacity>50</QueueCapacity> <!-- maximum queued items -->
+            <RetryAttempts>3</RetryAttempts>
+            <ErrorRecoveryTime>30</ErrorRecoveryTime> <!-- seconds -->
+        </ProductionSettings>
+        
+        <NetworkSettings>
+            <TCPPort>8080</TCPPort>
+            <MaxClients>10</MaxClients>
+            <HeartbeatInterval>30</HeartbeatInterval> <!-- seconds -->
+            <ConnectionTimeout>300</ConnectionTimeout> <!-- seconds -->
+        </NetworkSettings>
+        
+        <LoggingSettings>
+            <LogLevel>INFO</LogLevel>
+            <LogRetentionDays>30</LogRetentionDays>
+            <MaxLogFileSize>100MB</MaxLogFileSize>
+            <BackupLocation>\\server\logs\automotive\</BackupLocation>
+        </LoggingSettings>
+    </OperationalParameters>
+
+    <ComplianceRequirements>
+        <Traceability>
+            <DataRetention>7</DataRetention> <!-- years -->
+            <RequiredFields>
+                <Field>part_number</Field>
+                <Field>serial_number</Field>
+                <Field>supplier_code</Field>
+                <Field>production_date</Field>
+                <Field>marking_timestamp</Field>
+                <Field>operator_id</Field>
+                <Field>quality_verification</Field>
+            </RequiredFields>
+            <AuditTrail>enabled</AuditTrail>
+            <DigitalSignature>enabled</DigitalSignature>
+        </Traceability>
+        
+        <QualityStandards>
+            <IATF16949>
+                <ProcessValidation>required</ProcessValidation>
+                <StatisticalControl>enabled</StatisticalControl>
+                <PreventiveMaintenance>scheduled</PreventiveMaintenance>
+            </IATF16949>
+            
+            <ISO9001>
+                <DocumentControl>enabled</DocumentControl>
+                <CalibrationRecords>required</CalibrationRecords>
+                <NonConformanceTracking>enabled</NonConformanceTracking>
+            </ISO9001>
+        </QualityStandards>
+    </ComplianceRequirements>
+
+    <MaintenanceSchedule>
+        <DailyChecks>
+            <Check item="marking_quality" frequency="hourly"/>
+            <Check item="system_status" frequency="continuous"/>
+            <Check item="error_log_review" frequency="shift_end"/>
+        </DailyChecks>
+        
+        <WeeklyMaintenance>
+            <Task item="calibration_verification" duration="30min"/>
+            <Task item="backup_verification" duration="15min"/>
+            <Task item="performance_report" duration="45min"/>
+        </WeeklyMaintenance>
+        
+        <MonthlyMaintenance>
+            <Task item="full_system_calibration" duration="2hours"/>
+            <Task item="software_update_check" duration="30min"/>
+            <Task item="compliance_audit" duration="4hours"/>
+        </MonthlyMaintenance>
+    </MaintenanceSchedule>
+</MarkingSystemConfiguration> 
